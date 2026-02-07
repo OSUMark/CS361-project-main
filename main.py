@@ -31,5 +31,31 @@ def main_menu():
         print("Please enter 1-3 as your input.\n")
 
 
+def log_visit():
+    """This function allows the user to add a county visit to the
+    logs.  Function takes no input and returns a success code"""
+
+    print("\n--------------------------------------")
+    print("    County Tracker Log a New Visit")
+    print("--------------------------------------")
+    print("\nNow we are going to record a new visit to a county (or parish,")
+    print("or borough depending on the state) you haven't visited before.")
+    print("The tool will record the name of the county, the state it resides,")
+    print("and when you visited. As an optional item, you may add a note")
+    print("about the visit. If you do not wish to add a note, simply press")
+    print("the enter key when you get to that input.\n")
+
+    county_name = input("Please input the county name: ")
+    county_state = input("Please provide the state the county is part of: ")
+    date_visit = input(
+        "Please enter the date of your visit (using the "
+        "format MM/DD/YY): "
+    )
+    print(county_name)
+    print(county_state)
+    print(date_visit)
+
+
 main_select = main_menu()
 print("The user selected", main_select)
+test1 = log_visit()
