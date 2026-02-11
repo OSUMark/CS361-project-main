@@ -424,7 +424,16 @@ store.ensure_file()
 
 
 def main():
-    """Top-level program loop."""
+    print("Welcome to Mark's County Tracker!\n")
+    print("This tool will allow you to keep track of your visits to")
+    print("counties/parishes/boroughs in the United States. More than")
+    print("just a list of counties, this program will generate helpful")
+    print("information on what is left to explore, as well as statistics")
+    print("based on state and county. Come inside and we will have fun")
+    print("with this unique hobby!\n")
+
+    input("Press any key to continue...\n")
+
     while True:
         choice = main_menu()
         if choice == "1":
