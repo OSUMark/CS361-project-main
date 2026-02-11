@@ -10,5 +10,149 @@
     "state": "WA",
     "date": "03/05/99",
     "note": null
+  },
+  {
+    "county": "Astoria",
+    "state": "OR",
+    "date": "04/02/89",
+    "note": "Long time ago"
+  },
+  {
+    "county": "Snohomish",
+    "state": "WA",
+    "date": "04/12/85",
+    "note": "Testing"
+  },
+  {
+    "county": "Adams",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Arapahoe",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Boulder",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Broomfield",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Delta",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Denver",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Delores",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Douglas",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "El Paso",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Elbert",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Jefferson",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Kit Carson",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "La Plata",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Larimer",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Lincoln",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Mesa",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Montezuma",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Montrose",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Ouray",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "San Juan",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "San Miguel",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
+  },
+  {
+    "county": "Weld",
+    "state": "CO",
+    "date": "10/10/10",
+    "note": null
   }
 ]

@@ -9,7 +9,40 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 
-_STATE_NAME_TO_CODE: Dict[str, str] = {
+# Canonical full names for display
+USPS_CODE_TO_STATE_NAME: Dict[str, str] = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut",
+    "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
+    "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa",
+    "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine",
+    "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan",
+    "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana",
+    "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire",
+    "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+    "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania",
+    "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota",
+    "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+    "WI": "Wisconsin", "WY": "Wyoming", "DC": "District of Columbia",
+}
+
+STATE_TOTALS: Dict[str, int] = {
+    "AL": 67, "AK": 29, "AZ": 15, "AR": 75, "CA": 58, "CO": 64, "CT": 8,
+    "DE": 3, "FL": 67, "GA": 159, "HI": 5, "ID": 44, "IL": 102, "IN": 92,
+    "IA": 99, "KS": 105, "KY": 120, "LA": 64, "ME": 16, "MD": 24, "MA": 14,
+    "MI": 83, "MN": 87, "MS": 82, "MO": 115, "MT": 56, "NE": 93, "NV": 17,
+    "NH": 10, "NJ": 21, "NM": 33, "NY": 62, "NC": 100, "ND": 53, "OH": 88,
+    "OK": 77, "OR": 36, "PA": 67, "RI": 5, "SC": 46, "SD": 66, "TN": 95,
+    "TX": 254, "UT": 29, "VT": 14, "VA": 133, "WA": 39, "WV": 55,
+    "WI": 72, "WY": 23, "DC": 1,
+}
+
+USA_TOTAL = sum(STATE_TOTALS.values())  # expected 3,143 (50 states + DC)
+
+
+STATE_NAME_TO_CODE: Dict[str, str] = {
     # 2-letter codes (map to themselves)
     "AL": "AL", "AK": "AK", "AZ": "AZ", "AR": "AR", "CA": "CA",
     "CO": "CO", "CT": "CT", "DE": "DE", "FL": "FL", "GA": "GA",
@@ -23,8 +56,7 @@ _STATE_NAME_TO_CODE: Dict[str, str] = {
     "VA": "VA", "WA": "WA", "WV": "WV", "WI": "WI", "WY": "WY",
     "DC": "DC",
 
-
-    # Full names -> USPS
+    # Full names to 2-letter codes
     "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
     "CALIFORNIA": "CA", "COLORADO": "CO", "CONNECTICUT": "CT",
     "DELAWARE": "DE", "FLORIDA": "FL", "GEORGIA": "GA", "HAWAII": "HI",
@@ -45,8 +77,8 @@ _STATE_NAME_TO_CODE: Dict[str, str] = {
 
 
 def normalize_state_to_code(s: str) -> str:
-    """Accept USPS code or full name (any case/punctuation)
-    and return USPS 2-letter code."""
+    """This function takes a state (two letter code or full name) as input
+    and returns the two letter state code as output."""
     if not isinstance(s, str):
         raise ValueError("State must be a string.")
 
@@ -54,25 +86,25 @@ def normalize_state_to_code(s: str) -> str:
     cleaned = " ".join(s.replace(".", " ").replace(",", " ").split()).upper()
 
     if len(cleaned) == 2 and cleaned.isalpha():
-        code = _STATE_NAME_TO_CODE.get(cleaned)
+        code = STATE_NAME_TO_CODE.get(cleaned)
         if code:
             return code
 
-    # Try full-name mapping (includes some D.C. variants)
-    code = _STATE_NAME_TO_CODE.get(cleaned)
+    code = STATE_NAME_TO_CODE.get(cleaned)
     if code:
         return code
 
     raise ValueError(
-        f"Unrecognized state: {s!r}. "
-        "Use USPS code (e.g., OH) or full name (e.g., Ohio).")
+        f"The state: {s!r} was not recognized. "
+        "\nPlease use the two letter code (e.g., OK) "
+        "\nor full name (e.g., Oklahoma).\n"
+        )
 
 
 def normalize_county_display(name: str) -> str:
-    """Basic normalization for county display: trim + Title Case.
-
-    Avoids assumptions like stripping 'County' suffix—users sometimes include
-    borough/parish equivalents. Adjust if you want stronger rules.
+    """This function takes a county name as input and attempts to
+    remove extra spaces and give it a consistent capitalization format.
+    The fixed name is returned as output.
     """
     if not isinstance(name, str):
         raise ValueError("County must be a string.")
@@ -87,9 +119,9 @@ def normalize_date_format(date_str: str) -> str:
 
 
 class VisitStore:
-    """Store county visits in a JSON list at the given path.
+    """Store county visits in a JSON file at the given path.
 
-    - Accepts state as USPS code or full name, stores USPS code.
+    - Accepts state as two letter code or full name, stores as two letter code.
     - County/state duplicates are rejected (case-insensitive county).
     - File is created on first use; corrupted JSON is backed up.
     """
@@ -97,14 +129,12 @@ class VisitStore:
     def __init__(self, path: Path):
         self.path = Path(path)
 
-    # ---------- file handling ----------
-
     def ensure_file(self) -> None:
         """Create the JSON file if it doesn't already exist."""
         if not self.path.exists():
             self.path.write_text("[]\n", encoding="utf-8")
 
-    def _load(self) -> List[dict]:
+    def load(self) -> List[dict]:
         """Load visits as a list. If corrupted, back it up and start fresh."""
         if not self.path.exists():
             return []
@@ -112,7 +142,6 @@ class VisitStore:
             data = json.loads(self.path.read_text(encoding="utf-8"))
             return data if isinstance(data, list) else []
         except Exception:
-            # Backup the bad file, then reset
             backup = self.path.with_suffix(self.path.suffix + ".bak")
             try:
                 self.path.replace(backup)
@@ -121,9 +150,8 @@ class VisitStore:
             self.path.write_text("[]\n", encoding="utf-8")
             return []
 
-    def _save(self, visits: List[dict]) -> None:
+    def save(self, visits: List[dict]) -> None:
         """Save list of visits back to the file."""
-        # Simple atomic-ish write via temp file and replace
         tmp = self.path.with_suffix(self.path.suffix + ".tmp")
         tmp.write_text(
             json.dumps(visits, indent=2, ensure_ascii=False) + "\n",
@@ -131,21 +159,19 @@ class VisitStore:
         )
         tmp.replace(self.path)
 
-    # ---------- public API ----------
-
     def list_visits(self) -> List[dict]:
         """Return all stored visits."""
-        return self._load()
+        return self.load()
 
     def add_visit(
         self,
         county: str,
-        state: str,          # can be USPS code or full name
-        date: str,           # already validated before call
+        state: str,          # can be two letter or full name
+        date: str,
         note: Optional[str] = None,
     ) -> None:
         """Append a new visit if (county, state) not already present."""
-        visits = self._load()
+        visits = self.load()
 
         # Normalize inputs
         county_norm = normalize_county_display(county)
@@ -156,7 +182,6 @@ class VisitStore:
         if isinstance(note, str) and note.strip():
             note_clean = note.strip()
 
-        # Build duplicate index based on (county, state_code)
         existing_keys = {
             (normalize_county_display(v.get("county", "")).casefold(),
              str(v.get("state", "")).upper())
@@ -168,18 +193,18 @@ class VisitStore:
         if new_key in existing_keys:
             raise ValueError(
                 f"A visit for county '{county_norm}' "
-                "in state '{state_code}' already exists."
+                f"in state '{state_code}' already exists.\n"
             )
 
         visits.append(
             {
-                "county": county_norm,   # stored in Title Case
-                "state": state_code,     # stored as USPS code
+                "county": county_norm,
+                "state": state_code,
                 "date": date_clean,
                 "note": note_clean,
             }
         )
-        self._save(visits)
+        self.save(visits)
 
 
 def validate_date(input):
@@ -197,7 +222,7 @@ def validate_date(input):
 
 def main_menu():
     """This function prints the main menu of the program and solicits
-    input from the user. The function returns the choice to the user"""
+    input from the user. It returns the user's choice."""
 
     while True:
 
@@ -237,57 +262,161 @@ def log_visit():
     print("about the visit. If you do not wish to add a note, simply press")
     print("the enter key when you get to that input.\n")
 
-    county_name = input("Please input the county name: ")
-    county_state = input("Please provide the county's state: ")
+    while True:
 
-    while date_validation is False:
-        date_visit = input(
-            "Please enter the date of your visit (using the "
-            "format MM/DD/YY): "
-        )
-        date_validation = validate_date(date_visit)
-        if date_validation is False:
+        county_name = input("Please input the county name: ")
+        county_state = input("Please provide the county's state: ")
+
+        while date_validation is False:
+            date_visit = input(
+                "Please enter the date of your visit (using the "
+                "format MM/DD/YY): "
+            )
+            date_validation = validate_date(date_visit)
+            if date_validation is False:
+                print(
+                    "\nYou have input an invalid date or did not use the "
+                    "MM/DD/YY format.\n"
+                )
+
+        opt_note = input("(Optional) You can add a note about this visit: ")
+
+        print("You entered:\n")
+        print("County: ", county_name)
+        print("State: ", county_state)
+        print("Date: ", date_visit)
+        print("Note: ", opt_note)
+
+        print("\nIs this information correct?")
+        print("1. Yes, save it")
+        print("2. No, re-enter the information\n")
+        confirmation = input("My selection: ")
+
+        if confirmation == "1":
+            try:
+                store.add_visit(
+                    county=county_name,
+                    state=county_state,
+                    date=date_visit,
+                    note=opt_note or None
+                )
+                print("\nThank you, your county visit has been recorded.")
+                print("Now we will return you to the main menu.\n")
+                return True
+            except ValueError as exc:
+                print(f"\nThis visit was not saved because:\n{exc}")
+                return False
+
+        elif confirmation != "2":
             print(
-                "You have input an invalid date or did not use the "
-                "MM/DD/YY format."
+                "\nYou have entered an invalid option. "
+                "Please select 1 or 2.\n"
             )
 
-    opt_note = input("(Optional) You can add a note about this visit: ")
-
-    try:
-        store.add_visit(
-            county=county_name,
-            state=county_state,
-            date=date_visit,
-            note=opt_note or None
-        )
-        print("Your visit was saved.")
-        return True
-    except ValueError as exc:
-        print(f"Not saved: {exc}")
-        return False
+        date_validation = False
 
 
-def view_visits():
-    """List all saved visits in a readable way."""
+def count_visited_by_state(usps_code: str) -> int:
+    """Return the number of unique (county, state)
+    visits stored for the state."""
     visits = store.list_visits()
-    if not visits:
-        print("\nNo visits have been recorded yet.\n")
+    code = usps_code.upper()
+    return sum(1 for v in visits if str(v.get("state", "")).upper() == code)
+
+
+def percent(n: int, d: int) -> int:
+    """Round to nearest integer percent (e.g., 22/64 -> 34%)."""
+    if d <= 0:
+        return 0
+    return round((n / d) * 100)
+
+
+def press_any_key():
+    input("\nPress Enter to return to the View Statistics Menu...")
+
+
+def show_state_statistics():
+    print("\n-------------------------------------")
+    print(" County Tracker View Statistics Menu")
+    print("-------------------------------------")
+    print("\nYou have selected to look up statistics for a specific state.")
+    print("Please enter the state below.  It is acceptable to use the")
+    print("full name or its postal abbreviation (e.g. Montana or MT")
+    print("are both acceptable inputs).\n")
+
+    while True:
+        user_state = input("Please input your state: ").strip()
+
+        try:
+            code = normalize_state_to_code(user_state)
+        except ValueError as exc:
+            print(f"\n{exc}")
+            continue
+
+        total = STATE_TOTALS.get(code)
+
+        visited = count_visited_by_state(code)
+        name = USPS_CODE_TO_STATE_NAME.get(code, code)
+        pct = percent(visited, total)
+
+        print(f"\n\nFor your selected state of {name}:\n")
+        print(f"There are {total} counties in the state.")
+        print(f"You have visited {visited} of them.")
+        print(f"{name} is {pct}% finished.")
+
+        press_any_key()
         return
 
-    print("\n----------------------------------------")
-    print(" Your Recorded County Visits")
-    print("----------------------------------------")
-    for i, v in enumerate(visits, start=1):
-        county = v.get("county", "")
-        state = v.get("state", "")
-        date = v.get("date", "")
-        note = v.get("note", "")
-        line = f"{i}. {county}, {state} on {date}"
-        if note:
-            line += f" — {note}"
-        print(line)
-    print()  # trailing newline
+
+def _show_usa_statistics():
+    print("\n-------------------------------------")
+    print(" County Tracker View Statistics Menu")
+    print("-------------------------------------")
+    print("\nYou have selected to look up statistics for the entire USA.\n")
+
+    visits = store.list_visits()
+    visited_usa = sum(
+        1 for v in visits
+        if str(v.get("state", "")).upper() in STATE_TOTALS
+    )
+    total_usa = USA_TOTAL
+    pct = percent(visited_usa, total_usa)
+
+    print("For the United States of America:\n")
+    print(f"There are {total_usa} counties in the country.")
+    print(f"You have visited {visited_usa} of them.")
+    print(f"The USA is {pct}% finished.")
+
+    press_any_key()
+
+
+def view_statistics_menu():
+    """Interactive statistics menu loop (state, USA, return)."""
+
+    print("You have the ability to look up statistics for an individual")
+    print("state or the entire country. The program will display the")
+    print("number of counties that have been visited in the state or")
+    print("country and the total number of counties in that location.")
+    print("Then it will display the percentage that has been completed.\n")
+
+    while True:
+        print("\n-------------------------------------")
+        print(" County Tracker View Statistics Menu")
+        print("-------------------------------------")
+        print("1. Display Statistics for a state")
+        print("2. Display Statistics for the USA")
+        print("3. Return to Main Menu\n")
+
+        selection = input("Please enter your selection: ").strip()
+        if selection == "1":
+            show_state_statistics()
+        elif selection == "2":
+            _show_usa_statistics()
+        elif selection == "3":
+            return
+        else:
+            print("\nYou have entered an invalid choice.")
+            print("Please enter 1-3 as your input.\n")
 
 
 store = VisitStore(Path("county_visits.json"))
@@ -299,13 +428,12 @@ def main():
     while True:
         choice = main_menu()
         if choice == "1":
-            # Log a visit (uses your existing prompts and date validation)
             log_visit()
         elif choice == "2":
-            # View visits / basic stats placeholder
-            view_visits()
+            view_statistics_menu()
         else:
-            print("Goodbye!")
+            print("\nThank you for exploring the County Tracker.")
+            print("Please come again when you have more time!")
             break
 
 
